@@ -8,6 +8,7 @@
         <option value="$PROJECT_DIR$/authservice/pom.xml" />
         <option value="$PROJECT_DIR$/userservice/pom.xml" />
         <option value="$PROJECT_DIR$/discoveryserver/pom.xml" />
+        <option value="$PROJECT_DIR$/tictactoeservice/pom.xml" />
       </list>
     </option>
   </component>
