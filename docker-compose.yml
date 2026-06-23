@@ -1,0 +1,51 @@
+services:
+  postgres-auth:
+    image: postgres:12
+    container_name: postgres-auth
+    environment:
+      POSTGRES_DB: authdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5440:5432"
+    volumes:
+      - postgres_auth_data:/var/lib/postgresql/data
+
+  postgres-user:
+    image: postgres:12
+    container_name: postgres-user
+    environment:
+      POSTGRES_DB: userdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5441:5432"
+    volumes:
+      - postgres_user_data:/var/lib/postgresql/data
+
+  postgres-tictactoe:
+    image: postgres:12
+    container_name: postgres-tictactoe
+    environment:
+      POSTGRES_DB: tictactoedb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5442:5432"
+    volumes:
+      - postgres_tictactoe_data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # AMQP protocol port (for your apps)
+      - "15672:15672" # Management UI (browser)
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+volumes:
+  postgres_auth_data:
+  postgres_user_data:
+  postgres_tictactoe_data:

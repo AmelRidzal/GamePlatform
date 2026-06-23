@@ -1,9 +1,12 @@
 package com.gameplatform.tictactoeservice.service;
 
+import com.gameplatform.tictactoeservice.config.RabbitMQConfig;
 import com.gameplatform.tictactoeservice.dto.*;
 import com.gameplatform.tictactoeservice.entity.Game;
+import com.gameplatform.tictactoeservice.event.GameFinishedEvent;
 import com.gameplatform.tictactoeservice.repository.GameRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +18,7 @@ public class GameService {
 
     private final GameRepository gameRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final RabbitTemplate rabbitTemplate;
 
     public GameDto createGame(CreateGameRequest request) {
         Game game = new Game();
@@ -88,10 +92,40 @@ public class GameService {
 
         if (winner != null) {
             game.setStatus(Game.GameStatus.FINISHED);
+
             if (winner.equals("DRAW")) {
                 game.setWinner("DRAW");
+
+                // publish draw event for both players
+                rabbitTemplate.convertAndSend(
+                        RabbitMQConfig.EXCHANGE_NAME,
+                        RabbitMQConfig.ROUTING_KEY,
+                        new GameFinishedEvent(
+                                game.getPlayerXId(),
+                                game.getPlayerOId(),
+                                true, 10, 10  // draw — both get 10 points
+                        )
+                );
+
             } else {
-                game.setWinner(isPlayerX ? game.getPlayerXUsername() : game.getPlayerOUsername());
+                // figure out who won and who lost
+                boolean xWon = winner.equals("X");
+                Long winnerId = xWon ? game.getPlayerXId() : game.getPlayerOId();
+                Long loserId  = xWon ? game.getPlayerOId() : game.getPlayerXId();
+                String winnerUsername = xWon ? game.getPlayerXUsername() : game.getPlayerOUsername();
+
+                game.setWinner(winnerUsername);
+
+                // publish win event
+                rabbitTemplate.convertAndSend(
+                        RabbitMQConfig.EXCHANGE_NAME,
+                        RabbitMQConfig.ROUTING_KEY,
+                        new GameFinishedEvent(
+                                winnerId,
+                                loserId,
+                                false, 50, 10  // winner gets 50, loser gets 10
+                        )
+                );
             }
         } else {
             // switch turns

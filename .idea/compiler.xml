@@ -19,7 +19,6 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
         </processorPath>
         <module name="authservice" />
-        <module name="userservice" />
       </profile>
       <profile name="Annotation profile for tictactoeservice" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
@@ -29,6 +28,7 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
         </processorPath>
         <module name="tictactoeservice" />
+        <module name="userservice" />
       </profile>
     </annotationProcessing>
   </component>

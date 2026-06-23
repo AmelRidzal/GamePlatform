@@ -1,0 +1,187 @@
+# GamePlatform API Reference
+
+Base URL (via Gateway): `http://localhost:8080`
+
+---
+
+## Auth Service
+
+### Register
+```
+POST /api/auth/register
+Auth: None
+```
+```json
+{
+  "username": "testuser",
+  "email": "test@test.com",
+  "password": "password123"
+}
+```
+**Response:**
+```json
+{
+  "token": "eyJ...",
+  "username": "testuser",
+  "role": "USER"
+}
+```
+
+### Login
+```
+POST /api/auth/login
+Auth: None
+```
+```json
+{
+  "username": "testuser",
+  "password": "password123"
+}
+```
+**Response:** same shape as register.
+
+---
+
+## User Service
+
+All routes below require **Bearer Token** (from login/register response).
+
+### Create Profile
+```
+POST /api/users
+Auth: Bearer Token
+```
+```json
+{
+  "userId": 1,
+  "username": "testuser",
+  "displayName": "Test User",
+  "avatarUrl": null
+}
+```
+
+### Get Profile by ID
+```
+GET /api/users/{userId}
+Auth: Bearer Token
+```
+No body.
+
+### Get Profile by Username
+```
+GET /api/users/username/{username}
+Auth: Bearer Token
+```
+No body.
+
+---
+
+## Tic-Tac-Toe Service
+
+All routes below require **Bearer Token**.
+
+### Create Game
+```
+POST /api/tictactoe/create
+Auth: Bearer Token
+```
+```json
+{
+  "playerId": 1,
+  "playerUsername": "testuser"
+}
+```
+**Response:**
+```json
+{
+  "id": 1,
+  "playerXId": 1,
+  "playerXUsername": "testuser",
+  "playerOId": null,
+  "playerOUsername": null,
+  "board": "---------",
+  "status": "WAITING",
+  "currentTurn": "X",
+  "winner": null,
+  "createdAt": "...",
+  "boardDisplay": "..."
+}
+```
+
+### Join Game
+```
+POST /api/tictactoe/{gameId}/join
+Auth: Bearer Token
+```
+```json
+{
+  "playerId": 2,
+  "playerUsername": "player2"
+}
+```
+
+### Make Move (REST)
+```
+POST /api/tictactoe/{gameId}/move
+Auth: Bearer Token
+```
+```json
+{
+  "playerId": 1,
+  "position": 4
+}
+```
+`position` is 0–8:
+```
+ 0 | 1 | 2
+-----------
+ 3 | 4 | 5
+-----------
+ 6 | 7 | 8
+```
+
+### Get Game State
+```
+GET /api/tictactoe/{gameId}
+Auth: Bearer Token
+```
+No body.
+
+### Make Move (WebSocket — alternative to REST)
+```
+Connect: ws://localhost:8083/ws  (SockJS/STOMP)
+Send to: /app/game/{gameId}/move
+Subscribe to: /topic/game/{gameId}
+```
+```json
+{
+  "playerId": 1,
+  "position": 4
+}
+```
+Both players subscribed to `/topic/game/{gameId}` receive the updated `GameDto` automatically after any move.
+
+---
+
+## Auth Notes
+
+- Every route except `/api/auth/register` and `/api/auth/login` requires the header:
+```
+Authorization: Bearer <token>
+```
+- Token is obtained from the register or login response.
+- Token expires after 24 hours (`jwt.expiration=86400000`).
+- A missing/invalid token returns `401 Unauthorized` from the **Gateway** before it even reaches the service.
+
+---
+
+## Direct Service Ports (bypassing Gateway, for debugging only)
+
+| Service | Port |
+|---|---|
+| Discovery Server | 8761 |
+| API Gateway | 8080 |
+| Auth Service | 8081 |
+| User Service | 8082 |
+| Tic-Tac-Toe Service | 8083 |
+| RabbitMQ Management UI | 15672 (guest/guest) |
