@@ -1,47 +1,67 @@
 services:
 
-  # Infrastructure
   postgres-auth:
-    image: postgres:12
+    image: postgres:16
     container_name: postgres-auth
     environment:
       POSTGRES_DB: authdb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
     ports:
       - "5440:5432"
     volumes:
       - postgres_auth_data:/var/lib/postgresql/data
     networks:
       - gameplatform-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d authdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   postgres-user:
-    image: postgres:12
+    image: postgres:16
     container_name: postgres-user
     environment:
       POSTGRES_DB: userdb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
     ports:
       - "5441:5432"
     volumes:
       - postgres_user_data:/var/lib/postgresql/data
     networks:
       - gameplatform-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d userdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   postgres-tictactoe:
-    image: postgres:12
+    image: postgres:16
     container_name: postgres-tictactoe
     environment:
       POSTGRES_DB: tictactoedb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
     ports:
       - "5442:5432"
     volumes:
       - postgres_tictactoe_data:/var/lib/postgresql/data
     networks:
       - gameplatform-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d tictactoedb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -50,12 +70,20 @@ services:
       - "5672:5672"
       - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD must be set}
     networks:
       - gameplatform-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  # Spring Boot Services
+  # ─── Spring Boot Services ─────────────────────────────────────────────────────
+
   discoveryserver:
     build: ./discoveryserver
     container_name: discoveryserver
@@ -65,6 +93,13 @@ services:
       SPRING_PROFILES_ACTIVE: docker
     networks:
       - gameplatform-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
 
   apigateway:
     build: ./apigateway
@@ -74,50 +109,60 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
     depends_on:
-      - discoveryserver
+      discoveryserver:
+        condition: service_healthy
     networks:
       - gameplatform-network
+    restart: unless-stopped
 
   authservice:
     build: ./authservice
     container_name: authservice
-    ports:
-      - "8081:8081"
+    # No host port — only accessible via the API gateway internally
     environment:
       SPRING_PROFILES_ACTIVE: docker
     depends_on:
-      - discoveryserver
-      - postgres-auth
+      discoveryserver:
+        condition: service_healthy
+      postgres-auth:
+        condition: service_healthy
     networks:
       - gameplatform-network
+    restart: unless-stopped
 
   userservice:
     build: ./userservice
     container_name: userservice
-    ports:
-      - "8082:8082"
+    # No host port — only accessible via the API gateway internally
     environment:
       SPRING_PROFILES_ACTIVE: docker
     depends_on:
-      - discoveryserver
-      - postgres-user
-      - rabbitmq
+      discoveryserver:
+        condition: service_healthy
+      postgres-user:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - gameplatform-network
+    restart: unless-stopped
 
   tictactoeservice:
     build: ./tictactoeservice
     container_name: tictactoeservice
-    ports:
-      - "8083:8083"
+    # No host port — only accessible via the API gateway internally
     environment:
       SPRING_PROFILES_ACTIVE: docker
     depends_on:
-      - discoveryserver
-      - postgres-tictactoe
-      - rabbitmq
+      discoveryserver:
+        condition: service_healthy
+      postgres-tictactoe:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - gameplatform-network
+    restart: unless-stopped
 
 volumes:
   postgres_auth_data:
