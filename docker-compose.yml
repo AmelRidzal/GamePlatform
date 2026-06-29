@@ -1,4 +1,6 @@
 services:
+
+  # Infrastructure
   postgres-auth:
     image: postgres:12
     container_name: postgres-auth
@@ -10,6 +12,8 @@ services:
       - "5440:5432"
     volumes:
       - postgres_auth_data:/var/lib/postgresql/data
+    networks:
+      - gameplatform-network
 
   postgres-user:
     image: postgres:12
@@ -22,6 +26,8 @@ services:
       - "5441:5432"
     volumes:
       - postgres_user_data:/var/lib/postgresql/data
+    networks:
+      - gameplatform-network
 
   postgres-tictactoe:
     image: postgres:12
@@ -34,18 +40,90 @@ services:
       - "5442:5432"
     volumes:
       - postgres_tictactoe_data:/var/lib/postgresql/data
+    networks:
+      - gameplatform-network
 
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
     ports:
-      - "5672:5672"   # AMQP protocol port (for your apps)
-      - "15672:15672" # Management UI (browser)
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - gameplatform-network
+
+  # Spring Boot Services
+  discoveryserver:
+    build: ./discoveryserver
+    container_name: discoveryserver
+    ports:
+      - "8761:8761"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - gameplatform-network
+
+  apigateway:
+    build: ./apigateway
+    container_name: apigateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - discoveryserver
+    networks:
+      - gameplatform-network
+
+  authservice:
+    build: ./authservice
+    container_name: authservice
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - discoveryserver
+      - postgres-auth
+    networks:
+      - gameplatform-network
+
+  userservice:
+    build: ./userservice
+    container_name: userservice
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - discoveryserver
+      - postgres-user
+      - rabbitmq
+    networks:
+      - gameplatform-network
+
+  tictactoeservice:
+    build: ./tictactoeservice
+    container_name: tictactoeservice
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - discoveryserver
+      - postgres-tictactoe
+      - rabbitmq
+    networks:
+      - gameplatform-network
 
 volumes:
   postgres_auth_data:
   postgres_user_data:
   postgres_tictactoe_data:
+
+networks:
+  gameplatform-network:
+    driver: bridge

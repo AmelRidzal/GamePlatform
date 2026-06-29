@@ -20,7 +20,7 @@
         </processorPath>
         <module name="authservice" />
       </profile>
-      <profile name="Annotation profile for tictactoeservice" enabled="true">
+      <profile name="Annotation profile for userservice" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
