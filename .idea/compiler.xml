@@ -20,13 +20,14 @@
         </processorPath>
         <module name="authservice" />
       </profile>
-      <profile name="Annotation profile for userservice" enabled="true">
+      <profile name="Annotation profile for coinflipservice" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
         </processorPath>
+        <module name="coinflipservice" />
         <module name="tictactoeservice" />
         <module name="userservice" />
       </profile>
@@ -36,6 +37,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="apigateway" options="-parameters" />
       <module name="authservice" options="-parameters" />
+      <module name="coinflipservice" options="-parameters" />
       <module name="discoveryserver" options="-parameters" />
       <module name="tictactoeservice" options="-parameters" />
       <module name="userservice" options="-parameters" />

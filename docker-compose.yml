@@ -63,6 +63,27 @@ services:
       retries: 5
       start_period: 15s
 
+  postgres-coinflip:
+    image: postgres:16
+    container_name: postgres-coinflip
+    environment:
+      POSTGRES_DB: coinflipdb
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+    ports:
+      - "5443:5432"
+    volumes:
+      - postgres_coinflip_data:/var/lib/postgresql/data
+    networks:
+      - gameplatform-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d coinflipdb" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -164,10 +185,27 @@ services:
       - gameplatform-network
     restart: unless-stopped
 
+  coinflipservice:
+    build: ./coinflipservice
+    container_name: coinflipservice
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      discoveryserver:
+        condition: service_healthy
+      postgres-coinflip:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - gameplatform-network
+    restart: unless-stopped
+
 volumes:
   postgres_auth_data:
   postgres_user_data:
   postgres_tictactoe_data:
+  postgres_coinflip_data:
 
 networks:
   gameplatform-network:
